@@ -11,6 +11,7 @@ use Elementor\Icons_Manager;
 use Elementor\Repeater;
 use Elementor\Utils;
 use ElementorPro\Plugin;
+use ElementorPro\Core\Utils as ProUtils;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly
@@ -39,8 +40,40 @@ class Media_Carousel extends Base {
 		return [ 'media', 'carousel', 'image', 'video', 'lightbox' ];
 	}
 
+	public function has_widget_inner_wrapper(): bool {
+		return ! Plugin::elementor()->experiments->is_feature_active( 'e_optimized_markup' );
+	}
+
+	/**
+	 * Get style dependencies.
+	 *
+	 * Retrieve the list of style dependencies the widget requires.
+	 *
+	 * @since 3.24.0
+	 * @access public
+	 *
+	 * @return array Widget style dependencies.
+	 */
+	public function get_style_depends(): array {
+		return [ 'e-swiper', 'widget-media-carousel', 'widget-carousel-module-base' ];
+	}
+
+	/**
+	 * Get script dependencies.
+	 *
+	 * Retrieve the list of script dependencies the widget requires.
+	 *
+	 * @since 3.27.0
+	 * @access public
+	 *
+	 * @return array Widget script dependencies.
+	 */
+	public function get_script_depends(): array {
+		return [ 'swiper' ];
+	}
+
 	protected function render() {
-		$settings = $this->get_active_settings();
+		$settings = $this->get_settings_for_display();
 
 		if ( $settings['overlay'] ) {
 			$this->add_render_attribute( 'image-overlay', 'class', [
@@ -188,7 +221,6 @@ class Media_Carousel extends Base {
 				'dynamic' => [
 					'active' => true,
 				],
-				'placeholder' => esc_html__( 'https://your-link.com', 'elementor-pro' ),
 				'show_external' => 'true',
 				'condition' => [
 					'type' => 'image',
@@ -238,6 +270,10 @@ class Media_Carousel extends Base {
 		}
 
 		$attachment_post = get_post( $slide['image']['id'] );
+
+		if ( ProUtils::has_invalid_post_permissions( $attachment_post ) ) {
+			return '';
+		}
 
 		if ( 'caption' === $caption_type ) {
 			return $attachment_post->post_excerpt;
@@ -408,7 +444,7 @@ class Media_Carousel extends Base {
 					'auto' => esc_html__( 'Auto', 'elementor-pro' ),
 				],
 				'selectors' => [
-					'{{WRAPPER}} .elementor-main-swiper .elementor-carousel-image' => 'background-size: {{VALUE}}',
+					'{{WRAPPER}} .elementor-main-swiper:not(.elementor-thumbnails-swiper) .elementor-carousel-image' => 'background-size: {{VALUE}}',
 				],
 			]
 		);
@@ -472,7 +508,7 @@ class Media_Carousel extends Base {
 				'selector' => '{{WRAPPER}} .elementor-custom-embed-play i',
 				'fields_options' => [
 					'text_shadow_type' => [
-						'label' => _x( 'Shadow', 'Text Shadow Control', 'elementor-pro' ),
+						'label' => esc_html__( 'Shadow', 'elementor-pro' ),
 					],
 				],
 			]
@@ -661,7 +697,7 @@ class Media_Carousel extends Base {
 					],
 				],
 				'selectors' => [
-					'{{WRAPPER}} .elementor-main-swiper' => 'height: {{SIZE}}{{UNIT}};',
+					'{{WRAPPER}} .elementor-main-swiper:not(.elementor-thumbnails-swiper)' => 'height: {{SIZE}}{{UNIT}};',
 				],
 				'condition' => [
 					'skin' => 'slideshow',
@@ -756,6 +792,7 @@ class Media_Carousel extends Base {
 			'slides_to_scroll',
 			'pagination',
 			'heading_pagination',
+			'pagination_gap',
 			'pagination_size',
 			'pagination_position',
 			'pagination_color',
@@ -795,7 +832,7 @@ class Media_Carousel extends Base {
 			'space_between',
 			[
 				'selectors' => [
-					'{{WRAPPER}}.elementor-skin-slideshow .elementor-main-swiper' => 'margin-bottom: {{SIZE}}{{UNIT}}',
+					'{{WRAPPER}}.elementor-skin-slideshow .elementor-main-swiper:not(.elementor-thumbnails-swiper)' => 'margin-bottom: {{SIZE}}{{UNIT}}',
 				],
 				'render_type' => 'ui',
 			]

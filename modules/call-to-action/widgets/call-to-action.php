@@ -39,6 +39,28 @@ class Call_To_Action extends Base_Widget {
 		return [ 'call to action', 'cta', 'button' ];
 	}
 
+	protected function is_dynamic_content(): bool {
+		return false;
+	}
+
+	public function has_widget_inner_wrapper(): bool {
+		return ! Plugin::elementor()->experiments->is_feature_active( 'e_optimized_markup' );
+	}
+
+	/**
+	 * Get style dependencies.
+	 *
+	 * Retrieve the list of style dependencies the widget requires.
+	 *
+	 * @since 3.24.0
+	 * @access public
+	 *
+	 * @return array Widget style dependencies.
+	 */
+	public function get_style_depends(): array {
+		return [ 'widget-call-to-action', 'e-transitions' ];
+	}
+
 	protected function register_controls() {
 		$this->start_controls_section(
 			'section_main_image',
@@ -79,6 +101,10 @@ class Call_To_Action extends Base_Widget {
 					'right' => [
 						'title' => esc_html__( 'Right', 'elementor-pro' ),
 						'icon' => 'eicon-h-align-right',
+					],
+					'below' => [
+						'title' => esc_html__( 'Below', 'elementor-pro' ),
+						'icon' => 'eicon-v-align-bottom',
 					],
 				],
 				'prefix_class' => 'elementor-cta-%s-layout-image-',
@@ -193,40 +219,6 @@ class Call_To_Action extends Base_Widget {
 		);
 
 		$this->add_control(
-			'icon_view',
-			[
-				'label' => esc_html__( 'View', 'elementor-pro' ),
-				'type' => Controls_Manager::SELECT,
-				'options' => [
-					'default' => esc_html__( 'Default', 'elementor-pro' ),
-					'stacked' => esc_html__( 'Stacked', 'elementor-pro' ),
-					'framed' => esc_html__( 'Framed', 'elementor-pro' ),
-				],
-				'default' => 'default',
-				'condition' => [
-					'graphic_element' => 'icon',
-				],
-			]
-		);
-
-		$this->add_control(
-			'icon_shape',
-			[
-				'label' => esc_html__( 'Shape', 'elementor-pro' ),
-				'type' => Controls_Manager::SELECT,
-				'options' => [
-					'circle' => esc_html__( 'Circle', 'elementor-pro' ),
-					'square' => esc_html__( 'Square', 'elementor-pro' ),
-				],
-				'default' => 'circle',
-				'condition' => [
-					'icon_view!' => 'default',
-					'graphic_element' => 'icon',
-				],
-			]
-		);
-
-		$this->add_control(
 			'title',
 			[
 				'label' => esc_html__( 'Title', 'elementor-pro' ),
@@ -321,8 +313,6 @@ class Call_To_Action extends Base_Widget {
 				'dynamic' => [
 					'active' => true,
 				],
-				'placeholder' => esc_html__( 'https://your-link.com', 'elementor-pro' ),
-
 			]
 		);
 
@@ -654,6 +644,40 @@ class Call_To_Action extends Base_Widget {
 		);
 
 		$this->add_control(
+			'icon_view',
+			[
+				'label' => esc_html__( 'View', 'elementor-pro' ),
+				'type' => Controls_Manager::SELECT,
+				'options' => [
+					'default' => esc_html__( 'Default', 'elementor-pro' ),
+					'stacked' => esc_html__( 'Stacked', 'elementor-pro' ),
+					'framed' => esc_html__( 'Framed', 'elementor-pro' ),
+				],
+				'default' => 'default',
+				'condition' => [
+					'graphic_element' => 'icon',
+				],
+			]
+		);
+
+		$this->add_control(
+			'icon_shape',
+			[
+				'label' => esc_html__( 'Shape', 'elementor-pro' ),
+				'type' => Controls_Manager::SELECT,
+				'options' => [
+					'circle' => esc_html__( 'Circle', 'elementor-pro' ),
+					'square' => esc_html__( 'Square', 'elementor-pro' ),
+				],
+				'default' => 'circle',
+				'condition' => [
+					'icon_view!' => 'default',
+					'graphic_element' => 'icon',
+				],
+			]
+		);
+
+		$this->add_control(
 			'icon_spacing',
 			[
 				'label' => esc_html__( 'Spacing', 'elementor-pro' ),
@@ -871,6 +895,14 @@ class Call_To_Action extends Base_Widget {
 			Group_Control_Text_Stroke::get_type(),
 			[
 				'name' => 'text_stroke',
+				'selector' => '{{WRAPPER}} .elementor-cta__title',
+			]
+		);
+
+		$this->add_group_control(
+			Group_Control_Text_Shadow::get_type(),
+			[
+				'name' => 'title_text_shadow',
 				'selector' => '{{WRAPPER}} .elementor-cta__title',
 			]
 		);

@@ -12,13 +12,13 @@ use ElementorPro\Modules\Woocommerce\Module as WoocommerceModule;
 use Elementor\Group_Control_Typography;
 use Elementor\Group_Control_Text_Shadow;
 use Elementor\Group_Control_Text_Stroke;
+use ElementorPro\Plugin;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly
 }
 
 class Loop_Grid extends Base {
-
 	public function get_name() {
 		return 'loop-grid';
 	}
@@ -33,6 +33,24 @@ class Loop_Grid extends Base {
 
 	public function get_icon() {
 		return 'eicon-loop-builder';
+	}
+
+	/**
+	 * Get style dependencies.
+	 *
+	 * Retrieve the list of style dependencies the widget requires.
+	 *
+	 * @since 3.24.0
+	 * @access public
+	 *
+	 * @return array Widget style dependencies.
+	 */
+	public function get_style_depends(): array {
+		return [ 'widget-loop-grid' ];
+	}
+
+	public function has_widget_inner_wrapper(): bool {
+		return ! Plugin::elementor()->experiments->is_feature_active( 'e_optimized_markup' );
 	}
 
 	protected function register_layout_section() {
@@ -217,18 +235,18 @@ class Loop_Grid extends Base {
 				'type' => Controls_Manager::SELECT,
 				'default' => '1',
 				'options' => [
-					'1' => '1',
-					'2' => '2',
-					'3' => '3',
-					'4' => '4',
-					'5' => '5',
-					'6' => '6',
-					'7' => '7',
-					'8' => '8',
-					'9' => '9',
-					'10' => '10',
-					'11' => '11',
-					'12' => '12',
+					'1' => esc_html__( '1', 'elementor-pro' ),
+					'2' => esc_html__( '2', 'elementor-pro' ),
+					'3' => esc_html__( '3', 'elementor-pro' ),
+					'4' => esc_html__( '4', 'elementor-pro' ),
+					'5' => esc_html__( '5', 'elementor-pro' ),
+					'6' => esc_html__( '6', 'elementor-pro' ),
+					'7' => esc_html__( '7', 'elementor-pro' ),
+					'8' => esc_html__( '8', 'elementor-pro' ),
+					'9' => esc_html__( '9', 'elementor-pro' ),
+					'10' => esc_html__( '10', 'elementor-pro' ),
+					'11' => esc_html__( '11', 'elementor-pro' ),
+					'12' => esc_html__( '12', 'elementor-pro' ),
 				],
 				'condition' => [
 					'template_id!' => '',
@@ -254,8 +272,7 @@ class Loop_Grid extends Base {
 		$repeater->add_control(
 			'column_span_masonry_note',
 			[
-				// TODO: Remove define() with the release of Elementor 3.22
-				'type' => defined( 'Controls_Manager::ALERT' ) ? Controls_Manager::ALERT : 'alert',
+				'type' => Controls_Manager::ALERT,
 				'alert_type' => 'warning',
 				'content' => esc_html__( 'Note: The Masonry option combined with Column Span might cause unexpected results and break the layout.', 'elementor-pro' ),
 				'condition' => [
@@ -575,5 +592,13 @@ class Loop_Grid extends Base {
 		);
 
 		$this->end_controls_section();
+	}
+
+	public static function on_import_update_dynamic_content( array $element_config, array $data, $controls = null ) : array {
+		if ( isset( $element_config['settings']['template_id'] ) && isset( $data['post_ids'] ) ) {
+			$element_config['settings']['template_id'] = $data['post_ids'][ $element_config['settings']['template_id'] ];
+		}
+
+		return $element_config;
 	}
 }

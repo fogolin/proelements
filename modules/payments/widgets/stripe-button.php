@@ -3,12 +3,13 @@
 namespace ElementorPro\Modules\Payments\Widgets;
 
 use Elementor\Controls_Manager;
+use Elementor\Settings;
 use Elementor\Widget_Base;
-use Elementor\Plugin;
 use Elementor\Utils;
 use ElementorPro\Core\Utils as ProUtils;
 use ElementorPro\Modules\Payments\Classes\Payment_Button;
 use ElementorPro\Modules\Payments\Module;
+use ElementorPro\Plugin;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly
@@ -44,6 +45,10 @@ class Stripe_Button extends Payment_Button {
 
 	protected function get_merchant_name() {
 		return 'Stripe';
+	}
+
+	public function has_widget_inner_wrapper(): bool {
+		return ! Plugin::elementor()->experiments->is_feature_active( 'e_optimized_markup' );
 	}
 
 	/**
@@ -288,13 +293,12 @@ class Stripe_Button extends Payment_Button {
 		$this->add_control(
 			'test_environment_msg',
 			[
-				// TODO: Remove define() with the release of Elementor 3.22
-				'type' => defined( 'Controls_Manager::ALERT' ) ? Controls_Manager::ALERT : 'alert',
+				'type' => Controls_Manager::ALERT,
 				'alert_type' => 'info',
 				'content' => sprintf(
 					/* translators: 1: Elementor's integrations settings link opening tab, 2: Link closing tag. */
 					esc_html__( 'For this widget to work, you need to set your Stripe API keys in the %1$sIntegrations Settings%2$s.', 'elementor-pro' ),
-					sprintf( '<a href="%s" target="_blank">', admin_url( 'admin.php?page=elementor#tab-integrations' ) ),
+					sprintf( '<a href="%s" target="_blank">', Settings::get_settings_tab_url( 'integrations' ) ),
 					'</a>'
 				),
 				'separator' => 'after',
@@ -519,7 +523,7 @@ class Stripe_Button extends Payment_Button {
 				'raw' => sprintf(
 					/* translators: 1: Elementor's integrations settings link opening tab, 2: Link closing tag. */
 					esc_html__( 'Complete the entire checkout experience on your site with a mock payment method, using the Stripe Test key in the %1$sIntegrations Settings%2$s.', 'elementor-pro' ),
-					sprintf( '<a href="%s" target="_blank">', admin_url( 'admin.php?page=elementor#tab-integrations' ) ),
+					sprintf( '<a href="%s" target="_blank">', Settings::get_settings_tab_url( 'integrations' ) ),
 					'</a>'
 				),
 				'content_classes' => 'elementor-descriptor',

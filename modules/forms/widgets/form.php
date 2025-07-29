@@ -14,13 +14,13 @@ use ElementorPro\Modules\Forms\Classes\Form_Base;
 use ElementorPro\Modules\Forms\Controls\Fields_Repeater;
 use ElementorPro\Modules\Forms\Module;
 use ElementorPro\Plugin;
+use ElementorPro\Core\Utils\Hints;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly
 }
 
 class Form extends Form_Base {
-
 	public function get_name() {
 		return 'form';
 	}
@@ -35,6 +35,28 @@ class Form extends Form_Base {
 
 	public function get_keywords() {
 		return [ 'form', 'forms', 'field', 'button', 'mailchimp', 'drip', 'mailpoet', 'convertkit', 'getresponse', 'recaptcha', 'zapier', 'webhook', 'activecampaign', 'slack', 'discord', 'mailerlite' ];
+	}
+
+	protected function is_dynamic_content(): bool {
+		return false;
+	}
+
+	public function has_widget_inner_wrapper(): bool {
+		return ! Plugin::elementor()->experiments->is_feature_active( 'e_optimized_markup' );
+	}
+
+	/**
+	 * Get style dependencies.
+	 *
+	 * Retrieve the list of style dependencies the widget requires.
+	 *
+	 * @since 3.24.0
+	 * @access public
+	 *
+	 * @return array Widget style dependencies.
+	 */
+	public function get_style_depends(): array {
+		return [ 'widget-form' ];
 	}
 
 	protected function register_controls() {
@@ -441,7 +463,11 @@ class Form extends Form_Base {
 			[
 				'label' => esc_html__( 'ID', 'elementor-pro' ),
 				'type' => Controls_Manager::TEXT,
-				'description' => esc_html__( 'Please make sure the ID is unique and not used elsewhere in this form. This field allows `A-z 0-9` & underscore chars without spaces.', 'elementor-pro' ),
+				'description' => sprintf(
+					esc_html__( 'Please make sure the ID is unique and not used elsewhere on the page. This field allows %1$sA-z 0-9%2$s & underscore chars without spaces.', 'elementor-pro' ),
+					'<code>',
+					'</code>'
+				),
 				'render_type' => 'none',
 				'required' => true,
 				'dynamic' => [
@@ -481,7 +507,9 @@ class Form extends Form_Base {
 				'label' => esc_html__( 'Form Name', 'elementor-pro' ),
 				'type' => Controls_Manager::TEXT,
 				'default' => esc_html__( 'New Form', 'elementor-pro' ),
-				'placeholder' => esc_html__( 'Form Name', 'elementor-pro' ),
+				'dynamic' => [
+					'active' => true,
+				],
 			]
 		);
 
@@ -625,34 +653,6 @@ class Form extends Form_Base {
 			]
 		);
 
-		$this->add_responsive_control(
-			'button_align',
-			[
-				'label' => esc_html__( 'Alignment', 'elementor-pro' ),
-				'type' => Controls_Manager::CHOOSE,
-				'options' => [
-					'start' => [
-						'title' => esc_html__( 'Left', 'elementor-pro' ),
-						'icon' => 'eicon-text-align-left',
-					],
-					'center' => [
-						'title' => esc_html__( 'Center', 'elementor-pro' ),
-						'icon' => 'eicon-text-align-center',
-					],
-					'end' => [
-						'title' => esc_html__( 'Right', 'elementor-pro' ),
-						'icon' => 'eicon-text-align-right',
-					],
-					'stretch' => [
-						'title' => esc_html__( 'Justified', 'elementor-pro' ),
-						'icon' => 'eicon-text-align-justify',
-					],
-				],
-				'default' => 'stretch',
-				'prefix_class' => 'elementor%s-button-align-',
-			]
-		);
-
 		$this->add_control(
 			'heading_steps_buttons',
 			[
@@ -732,17 +732,34 @@ class Form extends Form_Base {
 			]
 		);
 
+		$start = is_rtl() ? 'right' : 'left';
+		$end = is_rtl() ? 'left' : 'right';
+
 		$this->add_control(
 			'button_icon_align',
 			[
 				'label' => esc_html__( 'Icon Position', 'elementor-pro' ),
-				'type' => Controls_Manager::SELECT,
-				'default' => 'left',
+				'type' => Controls_Manager::CHOOSE,
+				'default' => is_rtl() ? 'row-reverse' : 'row',
 				'options' => [
-					'left' => esc_html__( 'Before', 'elementor-pro' ),
-					'right' => esc_html__( 'After', 'elementor-pro' ),
+					'row' => [
+						'title' => esc_html__( 'Start', 'elementor-pro' ),
+						'icon' => "eicon-h-align-{$start}",
+					],
+					'row-reverse' => [
+						'title' => esc_html__( 'End', 'elementor-pro' ),
+						'icon' => "eicon-h-align-{$end}",
+					],
+				],
+				'selectors_dictionary' => [
+					'left' => is_rtl() ? 'row-reverse' : 'row',
+					'right' => is_rtl() ? 'row' : 'row-reverse',
+				],
+				'selectors' => [
+					'{{WRAPPER}} .elementor-button-content-wrapper' => 'flex-direction: {{VALUE}};',
 				],
 				'condition' => [
+					'button_text!' => '',
 					'selected_button_icon[value]!' => '',
 				],
 			]
@@ -766,11 +783,11 @@ class Form extends Form_Base {
 					],
 				],
 				'condition' => [
+					'button_text!' => '',
 					'selected_button_icon[value]!' => '',
 				],
 				'selectors' => [
-					'{{WRAPPER}} .elementor-button .elementor-align-icon-right' => 'margin-left: {{SIZE}}{{UNIT}};',
-					'{{WRAPPER}} .elementor-button .elementor-align-icon-left' => 'margin-right: {{SIZE}}{{UNIT}};',
+					'{{WRAPPER}} .elementor-button span' => 'gap: {{SIZE}}{{UNIT}};',
 				],
 			]
 		);
@@ -785,7 +802,11 @@ class Form extends Form_Base {
 					'active' => false,
 				],
 				'title' => esc_html__( 'Add your custom id WITHOUT the Pound key. e.g: my-id', 'elementor-pro' ),
-				'description' => esc_html__( 'Please make sure the ID is unique and not used elsewhere on the page this form is displayed. This field allows `A-z 0-9` & underscore chars without spaces.', 'elementor-pro' ),
+				'description' => sprintf(
+					esc_html__( 'Please make sure the ID is unique and not used elsewhere on the page. This field allows %1$sA-z 0-9%2$s & underscore chars without spaces.', 'elementor-pro' ),
+					'<code>',
+					'</code>'
+				),
 				'separator' => 'before',
 				'dynamic' => [
 					'active' => true,
@@ -801,6 +822,8 @@ class Form extends Form_Base {
 				'label' => esc_html__( 'Actions After Submit', 'elementor-pro' ),
 			]
 		);
+
+		$this->maybe_add_send_app_promotion_control();
 
 		$actions = Module::instance()->actions_registrar->get();
 
@@ -861,13 +884,13 @@ class Form extends Form_Base {
 				'frontend_available' => true,
 				'render_type' => 'none',
 				'options' => [
-					'none' => 'None',
-					'text' => 'Text',
-					'icon' => 'Icon',
-					'number' => 'Number',
-					'progress_bar' => 'Progress Bar',
-					'number_text' => 'Number & Text',
-					'icon_text' => 'Icon & Text',
+					'none' => esc_html__( 'None', 'elementor-pro' ),
+					'text' => esc_html__( 'Text', 'elementor-pro' ),
+					'icon' => esc_html__( 'Icon', 'elementor-pro' ),
+					'number' => esc_html__( 'Number', 'elementor-pro' ),
+					'progress_bar' => esc_html__( 'Progress Bar', 'elementor-pro' ),
+					'number_text' => esc_html__( 'Number & Text', 'elementor-pro' ),
+					'icon_text' => esc_html__( 'Icon & Text', 'elementor-pro' ),
 				],
 				'default' => 'number_text',
 			]
@@ -881,9 +904,9 @@ class Form extends Form_Base {
 				'frontend_available' => true,
 				'render_type' => 'none',
 				'options' => [
-					'circle' => 'Circle',
-					'square' => 'Square',
-					'rounded' => 'Rounded',
+					'circle' => esc_html__( 'Circle', 'elementor-pro' ),
+					'square' => esc_html__( 'Square', 'elementor-pro' ),
+					'rounded' => esc_html__( 'Rounded', 'elementor-pro' ),
 					'none' => 'None',
 				],
 				'default' => 'circle',
@@ -937,7 +960,11 @@ class Form extends Form_Base {
 					'active' => false,
 				],
 				'placeholder' => 'new_form_id',
-				'description' => esc_html__( 'Please make sure the ID is unique and not used elsewhere on the page this form is displayed. This field allows `A-z 0-9` & underscore chars without spaces.', 'elementor-pro' ),
+				'description' => sprintf(
+					esc_html__( 'Please make sure the ID is unique and not used elsewhere on the page. This field allows %1$sA-z 0-9%2$s & underscore chars without spaces.', 'elementor-pro' ),
+					'<code>',
+					'</code>'
+				),
 				'separator' => 'after',
 				'dynamic' => [
 					'active' => true,
@@ -1309,7 +1336,7 @@ class Form extends Form_Base {
 				'type' => Controls_Manager::COLOR,
 				'default' => '#ffffff',
 				'selectors' => [
-					'{{WRAPPER}} .elementor-field-group:not(.elementor-field-type-upload) .elementor-field:not(.elementor-select-wrapper)' => 'background-color: {{VALUE}};',
+					'{{WRAPPER}} .elementor-field-group .elementor-field:not(.elementor-select-wrapper)' => 'background-color: {{VALUE}};',
 					'{{WRAPPER}} .elementor-field-group .elementor-select-wrapper select' => 'background-color: {{VALUE}};',
 				],
 				'separator' => 'before',
@@ -1322,7 +1349,7 @@ class Form extends Form_Base {
 				'label' => esc_html__( 'Border Color', 'elementor-pro' ),
 				'type' => Controls_Manager::COLOR,
 				'selectors' => [
-					'{{WRAPPER}} .elementor-field-group:not(.elementor-field-type-upload) .elementor-field:not(.elementor-select-wrapper)' => 'border-color: {{VALUE}};',
+					'{{WRAPPER}} .elementor-field-group .elementor-field:not(.elementor-select-wrapper)' => 'border-color: {{VALUE}};',
 					'{{WRAPPER}} .elementor-field-group .elementor-select-wrapper select' => 'border-color: {{VALUE}};',
 					'{{WRAPPER}} .elementor-field-group .elementor-select-wrapper::before' => 'color: {{VALUE}};',
 				],
@@ -1338,7 +1365,7 @@ class Form extends Form_Base {
 				'placeholder' => '1',
 				'size_units' => [ 'px', '%', 'em', 'rem', 'vw', 'custom' ],
 				'selectors' => [
-					'{{WRAPPER}} .elementor-field-group:not(.elementor-field-type-upload) .elementor-field:not(.elementor-select-wrapper)' => 'border-width: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+					'{{WRAPPER}} .elementor-field-group .elementor-field:not(.elementor-select-wrapper)' => 'border-width: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
 					'{{WRAPPER}} .elementor-field-group .elementor-select-wrapper select' => 'border-width: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
 				],
 			]
@@ -1351,7 +1378,7 @@ class Form extends Form_Base {
 				'type' => Controls_Manager::DIMENSIONS,
 				'size_units' => [ 'px', '%', 'em', 'rem', 'custom' ],
 				'selectors' => [
-					'{{WRAPPER}} .elementor-field-group:not(.elementor-field-type-upload) .elementor-field:not(.elementor-select-wrapper)' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
+					'{{WRAPPER}} .elementor-field-group .elementor-field:not(.elementor-select-wrapper)' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
 					'{{WRAPPER}} .elementor-field-group .elementor-select-wrapper select' => 'border-radius: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};',
 				],
 			]
@@ -1364,6 +1391,65 @@ class Form extends Form_Base {
 			[
 				'label' => esc_html__( 'Buttons', 'elementor-pro' ),
 				'tab' => Controls_Manager::TAB_STYLE,
+			]
+		);
+
+		$this->add_responsive_control(
+			'button_align',
+			[
+				'label' => esc_html__( 'Position', 'elementor-pro' ),
+				'type' => Controls_Manager::CHOOSE,
+				'options' => [
+					'start' => [
+						'title' => esc_html__( 'Left', 'elementor-pro' ),
+						'icon' => 'eicon-h-align-left',
+					],
+					'center' => [
+						'title' => esc_html__( 'Center', 'elementor-pro' ),
+						'icon' => 'eicon-h-align-center',
+					],
+					'end' => [
+						'title' => esc_html__( 'Right', 'elementor-pro' ),
+						'icon' => 'eicon-h-align-right',
+					],
+					'stretch' => [
+						'title' => esc_html__( 'Stretch', 'elementor-pro' ),
+						'icon' => 'eicon-h-align-stretch',
+					],
+				],
+				'default' => 'stretch',
+				'prefix_class' => 'elementor%s-button-align-',
+			]
+		);
+
+		$this->add_responsive_control(
+			'button_content_align',
+			[
+				'label' => esc_html__( 'Alignment', 'elementor-pro' ),
+				'type' => Controls_Manager::CHOOSE,
+				'options' => [
+					'start'    => [
+						'title' => esc_html__( 'Start', 'elementor-pro' ),
+						'icon' => "eicon-text-align-{$start}",
+					],
+					'center' => [
+						'title' => esc_html__( 'Center', 'elementor-pro' ),
+						'icon' => 'eicon-text-align-center',
+					],
+					'end' => [
+						'title' => esc_html__( 'End', 'elementor-pro' ),
+						'icon' => "eicon-text-align-{$end}",
+					],
+					'space-between' => [
+						'title' => esc_html__( 'Space between', 'elementor-pro' ),
+						'icon' => 'eicon-text-align-justify',
+					],
+				],
+				'default' => '',
+				'selectors' => [
+					'{{WRAPPER}} .elementor-button span' => 'justify-content: {{VALUE}};',
+				],
+				'condition' => [ 'button_align' => 'stretch' ],
 			]
 		);
 
@@ -2183,8 +2269,8 @@ class Form extends Form_Base {
 			/**
 			 * Elementor form pre render.
 			 *
-			 * Fires before the from is rendered in the frontend. This hook allows
-			 * developers to add functionality before the from is rendered.
+			 * Fires before the form is rendered in the frontend. This hook allows
+			 * developers to add functionality before the form is rendered.
 			 *
 			 * @since 2.4.0
 			 *
@@ -2211,13 +2297,16 @@ class Form extends Form_Base {
 				],
 				'button' => [
 					'class' => 'elementor-button',
+					'type' => 'submit',
 				],
-				'icon-align' => [
-					'class' => [
-						empty( $instance['button_icon_align'] ) ? '' :
-							'elementor-align-icon-' . $instance['button_icon_align'],
-						'elementor-button-icon',
-					],
+				'button-content-wrapper' => [
+					'class' => 'elementor-button-content-wrapper',
+				],
+				'button-icon' => [
+					'class' => 'elementor-button-icon',
+				],
+				'button-text' => [
+					'class' => 'elementor-button-text',
 				],
 			]
 		);
@@ -2254,6 +2343,7 @@ class Form extends Form_Base {
 
 		if ( ! empty( $instance['form_name'] ) ) {
 			$this->add_render_attribute( 'form', 'name', $instance['form_name'] );
+			$this->add_render_attribute( 'form', 'aria-label', $instance['form_name'] );
 		}
 
 		if ( 'custom' === $instance['form_validation'] ) {
@@ -2385,10 +2475,10 @@ class Form extends Form_Base {
 				</div>
 				<?php endforeach; ?>
 				<div <?php $this->print_render_attribute_string( 'submit-group' ); ?>>
-					<button type="submit" <?php $this->print_render_attribute_string( 'button' ); ?>>
-						<span <?php $this->print_render_attribute_string( 'content-wrapper' ); ?>>
-							<?php if ( ! empty( $instance['button_icon'] ) || ! empty( $instance['selected_button_icon'] ) ) : ?>
-								<span <?php $this->print_render_attribute_string( 'icon-align' ); ?>>
+					<button <?php $this->print_render_attribute_string( 'button' ); ?>>
+						<span <?php $this->print_render_attribute_string( 'button-content-wrapper' ); ?>>
+							<?php if ( ! empty( $instance['button_icon'] ) || ! empty( $instance['selected_button_icon']['value'] ) ) : ?>
+								<span <?php $this->print_render_attribute_string( 'button-icon' ); ?>>
 									<?php $this->render_icon_with_fallback( $instance ); ?>
 									<?php if ( empty( $instance['button_text'] ) ) : ?>
 										<span class="elementor-screen-only"><?php echo esc_html__( 'Submit', 'elementor-pro' ); ?></span>
@@ -2396,7 +2486,7 @@ class Form extends Form_Base {
 								</span>
 							<?php endif; ?>
 							<?php if ( ! empty( $instance['button_text'] ) ) : ?>
-								<span class="elementor-button-text"><?php $this->print_unescaped_setting( 'button_text' ); ?></span>
+								<span <?php $this->print_render_attribute_string( 'button-text' ); ?>><?php $this->print_unescaped_setting( 'button_text' ); ?></span>
 							<?php endif; ?>
 						</span>
 					</button>
@@ -2417,18 +2507,21 @@ class Form extends Form_Base {
 	protected function content_template() {
 		?>
 		<#
-		view.addRenderAttribute(
-			'form',
-			{
-				'id': settings.form_id,
-				'name': settings.form_name,
-			}
-		);
+		view.addRenderAttribute( 'form', 'class', 'elementor-form' );
+
+		if ( '' !== settings.form_id ) {
+			view.addRenderAttribute( 'form', 'id', settings.form_id );
+		}
+
+		if ( '' !== settings.form_name ) {
+			view.addRenderAttribute( 'form', 'name', settings.form_name );
+		}
+
 		if ( 'custom' === settings.form_validation ) {
 			view.addRenderAttribute( 'form', 'novalidate' );
 		}
 		#>
-		<form class="elementor-form" {{{ view.getRenderAttributeString( 'form' ) }}}>
+		<form {{{ view.getRenderAttributeString( 'form' ) }}}>
 			<div class="elementor-form-fields-wrapper elementor-labels-{{settings.label_position}}">
 				<#
 					for ( var i in settings.form_fields ) {
@@ -2592,29 +2685,58 @@ class Form extends Form_Base {
 						}
 					}
 
-
-					var buttonClasses = 'elementor-field-group elementor-column elementor-field-type-submit e-form__buttons';
-
-					buttonClasses += ' elementor-col-' + ( ( '' !== settings.button_width ) ? settings.button_width : '100' );
+					view.addRenderAttribute(
+						'submit-group',
+						{
+							'class': [
+								'elementor-field-group',
+								'elementor-column',
+								'elementor-field-type-submit',
+								'e-form__buttons',
+								'elementor-col-' + ( ( '' !== settings.button_width ) ? settings.button_width : '100' )
+							]
+						}
+					);
 
 					if ( settings.button_width_tablet ) {
-						buttonClasses += ' elementor-md-' + settings.button_width_tablet;
+						view.addRenderAttribute( 'submit-group', 'class', 'elementor-md-' + settings.button_width_tablet );
 					}
 
 					if ( settings.button_width_mobile ) {
-						buttonClasses += ' elementor-sm-' + settings.button_width_mobile;
+						view.addRenderAttribute( 'submit-group', 'class', 'elementor-sm-' + settings.button_width_mobile );
 					}
 
-					var iconHTML = elementor.helpers.renderIcon( view, settings.selected_button_icon, { 'aria-hidden': true }, 'i' , 'object' ),
-						migrated = elementor.helpers.isIconMigrated( settings, 'selected_button_icon' );
+					view.addRenderAttribute( 'button', 'type', 'submit' );
+					view.addRenderAttribute( 'button', 'class', 'elementor-button' );
 
+					if ( '' !== settings.button_css_id ) {
+						view.addRenderAttribute( 'button', 'id', settings.button_css_id );
+					}
+
+					if ( '' !== settings.button_size ) {
+						view.addRenderAttribute( 'button', 'class', 'elementor-size-' + settings.button_size );
+					}
+
+					if ( '' !== settings.button_type ) {
+						view.addRenderAttribute( 'button', 'class', 'elementor-button-' + settings.button_type );
+					}
+
+					if ( '' !== settings.button_hover_animation ) {
+						view.addRenderAttribute( 'button', 'class', 'elementor-animation-' + settings.button_hover_animation );
+					}
+
+					view.addRenderAttribute( 'button-content-wrapper', 'class', 'elementor-button-content-wrapper' );
+					view.addRenderAttribute( 'button-icon', 'class', 'elementor-button-icon' );
+					view.addRenderAttribute( 'button-text', 'class', 'elementor-button-text' );
+
+					const iconHTML = elementor.helpers.renderIcon( view, settings.selected_button_icon, { 'aria-hidden': true }, 'i' , 'object' );
+					const migrated = elementor.helpers.isIconMigrated( settings, 'selected_button_icon' );
 					#>
-
-					<div class="{{ buttonClasses }}">
-						<button id="{{ settings.button_css_id }}" type="submit" class="elementor-button elementor-size-{{ settings.button_size }} elementor-button-{{ settings.button_type }} elementor-animation-{{ settings.button_hover_animation }}">
-							<span>
+					<div {{{ view.getRenderAttributeString( 'submit-group' ) }}}>
+						<button {{{ view.getRenderAttributeString( 'button' ) }}}>
+							<span {{{ view.getRenderAttributeString( 'button-content-wrapper' ) }}}>
 								<# if ( settings.button_icon || settings.selected_button_icon ) { #>
-									<span class="elementor-button-icon elementor-align-icon-{{ settings.button_icon_align }}">
+									<span {{{ view.getRenderAttributeString( 'button-icon' ) }}}>
 										<# if ( iconHTML && iconHTML.rendered && ( ! settings.button_icon || migrated ) ) { #>
 											{{{ iconHTML.value }}}
 										<# } else { #>
@@ -2625,7 +2747,7 @@ class Form extends Form_Base {
 								<# } #>
 
 								<# if ( settings.button_text ) { #>
-									<span class="elementor-button-text">{{{ settings.button_text }}}</span>
+									<span {{{ view.getRenderAttributeString( 'button-text' ) }}}>{{{ settings.button_text }}}</span>
 								<# } #>
 							</span>
 						</button>
@@ -2637,5 +2759,37 @@ class Form extends Form_Base {
 
 	public function get_group_name() {
 		return 'forms';
+	}
+
+	private function maybe_add_send_app_promotion_control(): void {
+		if ( Hints::is_plugin_installed( 'send-app' ) ) {
+			return;
+		}
+
+		$notice_id = 'send_app_forms_actions_notice';
+		if ( ! Hints::should_show_hint( $notice_id ) ) {
+			return;
+		}
+
+		$notice_content = wp_kses( __( 'Turning leads into sales can be easy.<br />Let Send do the work', 'elementor-pro' ), [ 'br' => [] ] );
+
+		$this->add_control(
+			'send_app_promo',
+			[
+				'type' => Controls_Manager::RAW_HTML,
+				'raw' => Hints::get_notice_template( [
+					'display' => ! Hints::is_dismissed( $notice_id ),
+					'type' => 'info',
+					'content' => $notice_content,
+					'icon' => true,
+					'dismissible' => $notice_id,
+					'button_text' => __( 'Start for free', 'elementor-pro' ),
+					'button_event' => $notice_id,
+					'button_data' => [
+						'action_url' => Hints::get_plugin_action_url( 'send-app' ),
+					],
+				], true ),
+			]
+		);
 	}
 }
